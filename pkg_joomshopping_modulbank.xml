@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<extension type="package" version="2.5" method="upgrade">
+	<name>Modulbank Package</name>
+	<author>АО КБ «Модульбанк»</author>
+	<creationDate>February 2019</creationDate>
+	<packagename>joomshopping_modulbank</packagename>
+	<version>1.0.0</version>
+	<url>https://modulbank.ru/</url>
+	<packager>Модульбнк</packager>
+	<packagerurl>http://modulbank.ru/</packagerurl>
+	<description><![CDATA[Интернет-эквайринг Модульбанк]]></description>
+	<scriptfile>install.php</scriptfile>
+	<files folder="packages">
+		<file type="plugin" id="jshopping_modulbank" group="jshoppingorder">plg_jshoppingorder_modulbank.zip</file>
+		<file type="plugin" id="system_modulbank" group="system">plg_system_modulbank.zip</file>
+	</files>
+</extension>
+
+
