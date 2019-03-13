@@ -7,7 +7,7 @@
 	<license>modulbank.ru</license>
 	<authorEmail>info@modulbank.ru</authorEmail>
 	<authorUrl>modulbank.ru</authorUrl>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<description></description>
 	<files>
 		<filename plugin="modulbank">modulbank.php</filename>

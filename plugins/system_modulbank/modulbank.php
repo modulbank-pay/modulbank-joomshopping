@@ -26,9 +26,12 @@ class plgsystemModulbank extends JPlugin
 			}
 			return;
 		}
-		$log = $this->app->input->get('download_modulbank_logs', 0, 'int');
-		if($log) {
-			ModulbankHelper::sendPackedLogs(JFactory::getConfig()->get('log_path'));
+		$user = JFactory::getUser();
+		if ($user->authorise('core.manage','com_jshopping')) {
+			$log = $this->app->input->get('download_modulbank_logs', 0, 'int');
+			if($log) {
+				ModulbankHelper::sendPackedLogs(JFactory::getConfig()->get('log_path'));
+			}
 		}
 	}
 
