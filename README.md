@@ -2,7 +2,7 @@
 
 Модуль позволяет принимать платежи банковской картой через Модульбанк.
 
-[Скачать модуль](https://github.com/modulbank-pay/modulbank-joomshopping/releases/download/1.0.0/pkg_joomshopping_modulbank_1.0.0.zip)
+[Скачать модуль](https://github.com/modulbank-pay/modulbank-joomshopping/releases/download/1.0.1/pkg_joomshopping_modulbank_1.0.1.zip)
 
 ### Установка
 
