@@ -31,6 +31,7 @@ class pm_modulbank extends PaymentRoot
 	//function call in admin
 	public function showAdminFormParams($params)
 	{
+		if ($params == "")$params = [];
 		$data                 = [];
 		$data['vat_catalog']  = array(array('id' => '0', 'name' => 'Брать из настроек товара'));
 		$data['vat_delivery'] = array(array('id' => '0', 'name' => 'Брать из настроек доставки'));
