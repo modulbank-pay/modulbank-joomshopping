@@ -31,7 +31,10 @@ class pm_modulbank extends PaymentRoot
 	//function call in admin
 	public function showAdminFormParams($params)
 	{
-		if ($params == "")$params = [];
+		if ($params == "") {
+			$params = [];
+		}
+
 		$data                 = [];
 		$data['vat_catalog']  = array(array('id' => '0', 'name' => 'Брать из настроек товара'));
 		$data['vat_delivery'] = array(array('id' => '0', 'name' => 'Брать из настроек доставки'));
@@ -116,13 +119,15 @@ class pm_modulbank extends PaymentRoot
 		$db            = JFactory::getDBO();
 		$state         = JRequest::getVar('state');
 		$transactionId = JRequest::getVar('transaction_id');
-		$amount = JRequest::getVar('amount');
+		$amount        = JRequest::getVar('amount');
+		$post          = JRequest::get('post');
+		$this->log($post, 'callback');
 
 		if ($this->checkSign($pmconfigs)) {
 			$db->setQuery("
 				REPLACE INTO #__modulbank_transactions
 				(order_id, amount, transaction) VALUES
-				({$order->order_id},".$db->quote($amount).", ".$db->quote($transactionId).")");
+				({$order->order_id}," . $db->quote($amount) . ", " . $db->quote($transactionId) . ")");
 			$db->query();
 			if ($state === 'COMPLETE') {
 				$status   = $pmconfigs['transaction_end_status'];
@@ -266,6 +271,7 @@ class pm_modulbank extends PaymentRoot
 
 	private function error($msg)
 	{
+		$this->log($msg, 'error');
 		throw new Exception($msg, 1);
 
 	}
@@ -298,11 +304,7 @@ class pm_modulbank extends PaymentRoot
 
 	public function checkSign($config)
 	{
-		if ($config['testing'] == '0') {
-			$key = $config['secret_key'];
-		} else {
-			$key = $config['test_secret_key'];
-		}
+		$key       = $config['mode'] == 'test' ? $config['test_secret_key'] : $config['secret_key'];
 		$post      = JRequest::get('post');
 		$signature = ModulbankHelper::calcSignature($key, $post);
 		return strcasecmp($signature, JRequest::getVar('signature')) == 0;
