@@ -121,7 +121,7 @@ class pm_modulbank extends PaymentRoot
 		$transactionId = JRequest::getVar('transaction_id');
 		$amount        = JRequest::getVar('amount');
 		$post          = JRequest::get('post');
-		$this->log($post, 'callback');
+		$this->log($post, 'callback', $pmconfigs);
 
 		if ($this->checkSign($pmconfigs)) {
 			$db->setQuery("
