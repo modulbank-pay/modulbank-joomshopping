@@ -100,6 +100,8 @@ class pm_modulbank extends PaymentRoot
 			'transaction_end_status'     => 6, //Paid
 			'transaction_pending_status' => 1, //Pending
 			'transaction_refund_status'  => 4, //Refunded
+			'transaction_capture_status' => 2, //Refunded
+			'preauth'                    => 0,
 			'log_size_limit'             => 10,
 		);
 		foreach ($settings as $key => $value) {
@@ -129,7 +131,10 @@ class pm_modulbank extends PaymentRoot
 				(order_id, amount, transaction) VALUES
 				({$order->order_id}," . $db->quote($amount) . ", " . $db->quote($transactionId) . ")");
 			$db->query();
-			if ($state === 'COMPLETE') {
+			if (
+				($state === 'COMPLETE' || $state === 'AUTHORIZED')
+				&& $order->order_status != $pmconfigs['transaction_capture_status']
+			) {
 				$status   = $pmconfigs['transaction_end_status'];
 				$checkout = JModelLegacy::getInstance('checkout', 'jshop');
 				if ($status && !$order->order_created) {
@@ -156,59 +161,8 @@ class pm_modulbank extends PaymentRoot
 	{
 		$jshopConfig = JSFactory::getConfig();
 		$amount      = number_format(round($order->order_total, 2), 2, '.', '');
-		$receipt     = new ModulbankReceipt($pmconfigs['sno'], $pmconfigs['payment_method'], $amount);
-		$cart        = JSFactory::getModel('cart', 'jshop');
-
-		if (method_exists($cart, 'init')) {
-			$cart->init('cart', 1);
-		} else {
-			$cart->load('cart');
-		}
 
 		$db = JFactory::getDBO();
-		$db->setQuery("SELECT * FROM #__jshopping_taxes");
-		$taxes = $db->loadObjectList('tax_id');
-
-		foreach ($cart->products as $product) {
-			if ($pmconfigs['product_vat']) {
-				$nds = $pmconfigs['product_vat'];
-			} else {
-				switch ($taxes[$product['tax_id']]->tax_value) {
-					case 20:$nds = 'vat20';
-						break;
-					case 10:$nds = 'vat10';
-						break;
-					default:$nds = 'none';
-						break;
-				}
-			}
-			$receipt->addItem($product['product_name'], $product['price'], $nds, $pmconfigs['payment_object'], $product['quantity']);
-		}
-
-		$shipping        = false;
-		$shippingModel   = JSFactory::getTable('shippingMethod', 'jshop');
-		$shippingMethods = $shippingModel->getAllShippingMethodsCountry($order->d_country, $order->payment_method_id);
-		foreach ($shippingMethods as $tmp) {
-			if ($tmp->shipping_id == $order->shipping_method_id) {
-				$shipping = $tmp;
-			}
-		}
-
-		if ($order->shipping_method_id && $shipping) {
-			if ($pmconfigs['delivery_vat']) {
-				$nds = $pmconfigs['delivery_vat'];
-			} else {
-				switch ($taxes[$shipping->shipping_tax_id]->tax_value) {
-					case 20:$nds = 'vat20';
-						break;
-					case 10:$nds = 'vat10';
-						break;
-					default:$nds = 'none';
-						break;
-				}
-			}
-			$receipt->addItem($shipping->name, $shipping->shipping_stand_price, $nds, $pmconfigs['payment_object_delivery']);
-		}
 
 		$callbackUrl = JURI::root() . "index.php?option=com_jshopping&controller=checkout&task=step7&act=notify&js_paymentclass=pm_modulbank&no_lang=1&order_id=" . $order->order_id;
 
@@ -223,6 +177,7 @@ class pm_modulbank extends PaymentRoot
 			'amount'          => $amount,
 			'order_id'        => $order->order_id,
 			'testing'         => $pmconfigs['mode'] == 'test' ? 1 : 0,
+			'preauth'         => $pmconfigs['preauth'],
 			'description'     => 'Оплата заказа №' . $order->order_number,
 			'success_url'     => $pmconfigs['success_url'],
 			'fail_url'        => $pmconfigs['fail_url'],
@@ -231,7 +186,7 @@ class pm_modulbank extends PaymentRoot
 			'client_name'     => $order->f_name . ' ' . $order->l_name,
 			'client_email'    => $order->email,
 			'receipt_contact' => $order->email,
-			'receipt_items'   => $receipt->getJson(),
+			'receipt_items'   => $this->getReceipt($pmconfigs, $order->order_id),
 			'unix_timestamp'  => time(),
 			'sysinfo'         => json_encode($sysinfo),
 			'salt'            => ModulbankHelper::getSalt(),
@@ -267,6 +222,63 @@ class pm_modulbank extends PaymentRoot
 <?php
 
 		die();
+	}
+
+	private function getReceipt($pmconfigs, $order_id)
+	{
+		$jshopConfig = JSFactory::getConfig();
+		$order = JSFactory::getTable('order', 'jshop');
+        $order->load($order_id);
+
+		$order->prepareOrderPrint('order_show');
+		$amount      = number_format(round($order->order_total, 2), 2, '.', '');
+		$receipt     = new ModulbankReceipt($pmconfigs['sno'], $pmconfigs['payment_method'], $amount);
+
+		$order->loadItemsNewDigitalProducts();
+        $order_items = $order->getAllItems();
+
+		foreach ($order_items as $product) {
+			if ($pmconfigs['product_vat']) {
+				$nds = $pmconfigs['product_vat'];
+			} else {
+				switch (intval($product->product_tax)) {
+					case 20:$nds = 'vat20';
+						break;
+					case 10:$nds = 'vat10';
+						break;
+					default:$nds = 'none';
+						break;
+				}
+			}
+			$receipt->addItem($product->product_name, $product->product_item_price, $nds, $pmconfigs['payment_object'], $product->product_quantity);
+		}
+
+		$shipping        = false;
+		$shippingModel   = JSFactory::getTable('shippingMethod', 'jshop');
+		$shippingMethods = $shippingModel->getAllShippingMethodsCountry($order->d_country, $order->payment_method_id);
+		foreach ($shippingMethods as $tmp) {
+			if ($tmp->shipping_id == $order->shipping_method_id) {
+				$shipping = $tmp;
+			}
+		}
+
+		if ($order->shipping_method_id && $shipping) {
+			if ($pmconfigs['delivery_vat']) {
+				$nds = $pmconfigs['delivery_vat'];
+			} else {
+				switch ($taxes[$shipping->shipping_tax_id]->tax_value) {
+					case 20:$nds = 'vat20';
+						break;
+					case 10:$nds = 'vat10';
+						break;
+					default:$nds = 'none';
+						break;
+				}
+			}
+			$receipt->addItem($shipping->name, $shipping->shipping_stand_price, $nds, $pmconfigs['payment_object_delivery']);
+		}
+
+		return $receipt->getJson();
 	}
 
 	private function error($msg)
@@ -337,6 +349,8 @@ class pm_modulbank extends PaymentRoot
 					break;
 				case 'COMPLETE':$msg = "<b>Статус оплаты:</b> Оплата прошла успешно";
 					break;
+				case 'AUTHORIZED':$msg = "<b>Статус оплаты:</b> Оплата прошла успешно";
+					break;
 				default:$msg = "<b>Статус оплаты:</b> Ожидаем поступления средств";
 			}
 		}
@@ -362,6 +376,39 @@ class pm_modulbank extends PaymentRoot
 				$key
 			);
 			$this->log($result, 'refund_response', $config);
+		}
+	}
+
+	public function capture($config, $order_id)
+	{
+		$db = JFactory::getDBO();
+		$db->setQuery("SELECT transaction, amount FROM #__modulbank_transactions WHERE order_id=$order_id");
+		$transaction = $db->loadObject();
+		$key         = $config['mode'] == 'test' ? $config['test_secret_key'] : $config['secret_key'];
+		$jshopConfig = JSFactory::getConfig();
+		$order = JSFactory::getTable('order', 'jshop');
+        $order->load($order_id);
+		$amount      = number_format(round($order->order_total, 2), 2, '.', '');
+		$email       = $order->email;
+		if ($transaction) {
+			$receiptJson = $this->getReceipt($config, $order_id);
+			$data        = [
+				'merchant'        => $config['merchant'],
+				'amount'          => $amount,
+				'transaction'     => $transaction->transaction,
+				'receipt_contact' => $email,
+				'receipt_items'   => $receiptJson,
+				'unix_timestamp'  => time(),
+				'salt'            => ModulbankHelper::getSalt(),
+			];
+			$this->log(
+				$data, 'capture', $config);
+
+			$result = ModulbankHelper::capture(
+				$data,
+				$key
+			);
+			$this->log($result, 'capture_response', $config);
 		}
 	}
 

@@ -50,6 +50,9 @@ class plgJshoppingorderjshopping_modulbank extends JPlugin
 			if ($pmconfigs['transaction_refund_status'] == $order->order_status) {
 				$payment_system->refund($pmconfigs, $order->order_id);
 			}
+			if ($pmconfigs['preauth'] && $pmconfigs['transaction_capture_status'] == $order->order_status) {
+				$payment_system->capture($pmconfigs, $order->order_id);
+			}
 		}
 		return true;
 

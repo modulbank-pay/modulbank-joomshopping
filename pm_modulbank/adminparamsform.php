@@ -152,6 +152,31 @@
    <td>
      <?php
      echo JHTML::_('select.genericlist', $orders->getAllOrderStatus(), 'pm_params[transaction_refund_status]', 'class = "inputbox" size = "1"', 'status_id', 'name', $params['transaction_refund_status'] );
+     echo " ".JHTML::tooltip("Будет осуществлён возврат средств покупателю при смене статуса заказа на указанный.");
+     ?>
+   </td>
+ </tr>
+ <tr>
+   <td  class="key">
+     Предавторизация
+   </td>
+   <td>
+    <?php
+    $options = array(
+      array('id' => '0', 'name' => 'Нет'),
+      array('id' => '1', 'name' => 'Да'),
+    );
+    echo JHTML::_('select.genericlist', $options, 'pm_params[preauth]', 'class = "inputbox" size = "1"', 'id', 'name', $params['preauth'] );
+    ?>
+   </td>
+ </tr>
+ <tr>
+   <td class="key">
+     Статус для подтверждения оплаты
+   </td>
+   <td>
+     <?php
+     echo JHTML::_('select.genericlist', $orders->getAllOrderStatus(), 'pm_params[transaction_capture_status]', 'class = "inputbox" size = "1"', 'status_id', 'name', $params['transaction_capture_status'] );
      ?>
    </td>
  </tr>
