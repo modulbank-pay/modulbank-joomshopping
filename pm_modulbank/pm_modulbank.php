@@ -103,6 +103,11 @@ class pm_modulbank extends PaymentRoot
 			'transaction_capture_status' => 2, //Refunded
 			'preauth'                    => 0,
 			'log_size_limit'             => 10,
+			'pm_checkbox'                => 0,
+			'card'                       => 0,
+			'sbp'                        => 0,
+			'googlepay'                  => 0,
+			'applepay'                   => 0,
 		);
 		foreach ($settings as $key => $value) {
 			if (!isset($params[$key])) {
@@ -191,7 +196,16 @@ class pm_modulbank extends PaymentRoot
 			'sysinfo'         => json_encode($sysinfo),
 			'salt'            => ModulbankHelper::getSalt(),
 		];
-		$key               = $pmconfigs['mode'] == 'test' ? $pmconfigs['test_secret_key'] : $pmconfigs['secret_key'];
+
+		$key  = $pmconfigs['mode'] == 'test' ? $pmconfigs['test_secret_key'] : $pmconfigs['secret_key'];
+
+		if ($pmconfigs['pm_checkbox']) {
+			$methods = ['card', 'sbp', 'applepay', 'googlepay'];
+			$methods = array_filter($methods, function ($method) use ($pmconfigs) {
+				return $pmconfigs[$method];
+			});
+			$data['show_payment_methods'] = json_encode(array_values($methods));
+		}
 		$data['signature'] = ModulbankHelper::calcSignature($key, $data);
 
 		$this->log($data, 'paymentForm', $pmconfigs);

@@ -181,6 +181,29 @@
    </td>
  </tr>
  <tr>
+   <td class="key">Отображать определённые способы оплаты</td>
+   <td><input id="modulbank_pm_checkbox" type="checkbox" name="pm_params[pm_checkbox]" value="1" <?php if ( $params['pm_checkbox'] == 1): ?>
+     checked
+   <?php endif ?>><?echo " ".JHTML::tooltip("Для отображения отдельных методов оплаты установите галочку и выберите интересующие из списка.");?></td>
+ </tr>
+<tr id="show_payment_methods_block" style="display:none">
+   <td class="key">Отображаемые варианты оплаты</td>
+   <td><?php
+    $options = array(
+      array('id' => 'card', 'name' => 'Картой'),
+      array('id' => 'sbp', 'name' => 'Система Быстрых Платежей'),
+      array('id' => 'googlepay', 'name' => 'GooglePay'),
+      array('id' => 'applepay', 'name' => 'ApplePay'),
+    );
+    foreach($options as $option) {
+      $checked = ($params[$option['id']] == 1)?'checked':'';
+      ?>
+      <input type="checkbox" name="pm_params[<?php echo $option['id']?>]" value="1" <?php echo $checked;?>>&nbsp;<?php echo $option['name']?><br>
+      <?php
+    }
+    ?></td>
+ </tr>
+ <tr>
    <td  class="key">
      Логирование
    </td>
@@ -208,3 +231,19 @@
 </fieldset>
 </div>
 <div class="clr"></div>
+<script>
+  jQuery(document).ready(function(){
+    var checkbox = jQuery('#modulbank_pm_checkbox');
+    var block = jQuery('#show_payment_methods_block');
+    if (checkbox.attr('checked')) {
+      block.show();
+    }
+    checkbox.change(function(){
+      if (this.checked) {
+        block.show();
+      } else {
+        block.hide();
+      }
+    });
+  });
+</script>
