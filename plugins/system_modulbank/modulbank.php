@@ -19,7 +19,7 @@ class plgsystemModulbank extends JPlugin
 	public function onAfterInitialise()
 	{
 
-		if ($this->app->isClient('site')){
+		if ($this->app->isSite()){
 			$id = $this->app->input->get('transaction_id', '', 'string');
 			if ($id) {
 				JFactory::getSession()->set('modulbank_transaction_id', $id);
